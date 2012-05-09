@@ -1,0 +1,8 @@
+*.lst
+*.o
+*.elf
+*.hex
+*.map
+*.obj
+*.a
+.depend
