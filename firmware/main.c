@@ -5,36 +5,12 @@
 #define Y 1
 #define Z 2
 
+#include "onboard_acc.h"
+#include "bma180.h"
+
 void output_leds(unsigned char leds) {
 	change_bits(P3OUT,0b11110000,leds&0b11110000);
 	change_bits(PJOUT,0b00001111,leds&0b00001111);
-}
-
-void onboard_acc_init(void) {
-	//configure pins for adc
-	P3SEL0 = 0b00000111;
-	P3SEL1 = 0b00000111;
-	
-	//setup adc
-	ADC10CTL0 |= ADC10SHT_2 + ADC10ON;        // ADC10ON, S&H=16 ADC clks
-	ADC10CTL1 |= ADC10SHP;                    // ADCCLK = MODOSC; sampling timer
-	ADC10CTL2 |= ADC10RES;                    // 10-bit conversion results
-	
-	//power accelerometer
-	set_bit(P2DIR,7);
-	set_bit(P2OUT,7);
-	
-	// Allow the accelerometer to power up before sampling any data 
-	__delay_cycles(200000);
-}
-
-unsigned int onboard_acc_read(unsigned char channel) {
-	ADC10CTL0 &= ~ADC10ENC;                   //Stop conversion
-	change_bits(ADC10MCTL0, 0b00001111, 12+channel); // ADC input select;
-	//output_leds(ADC10MCTL0);
-	ADC10CTL0 |= ADC10ENC + ADC10SC;          // Sampling and conversion start
-	while (ADC10CTL1 & BUSY);
-	return ADC10MEM0;
 }
 
 void io_init(void) {
@@ -53,32 +29,115 @@ void io_init(void) {
 	#define switch_pressed(switch) (!test_bit(P4IN,switch))
 }
 
+#define WRITE 0b00000000
+#define READ  0b10000000
+
+#define CS 0
+#define CLOCK 1
+#define DOUT 2
+#define DIN 7
+
+///Enables spi communication, 1 for start, 0 for stop
+unsigned char spi_enable(unsigned char enable) {
+	change_bit(P1OUT,CS,!enable);
+}
+
+void clockpulse(unsigned char rising) {
+	change_bit(P1OUT,CLOCK,!rising);
+	__delay_cycles(2000);
+	
+	//Switch here!
+	
+	change_bit(P1OUT,CLOCK,rising);
+	__delay_cycles(2000);
+}
+
+void spi_send(unsigned char data) {
+	for(signed char bit=7;bit>=0;bit--) {
+		change_bit(P1OUT,DOUT,test_bit(data,bit));
+		clockpulse(1);
+	}
+}
+
+unsigned char spi_recieve(void) {
+	unsigned char data;
+	for(signed char bit=7;bit>=0;bit--) {
+		change_bit(data,bit,test_bit(P1IN,DIN));
+		clockpulse(1);
+	}
+	return data;
+}
+
+void spi_write(unsigned char reg, unsigned char data) {
+	spi_enable(1);
+	
+	//send register to write
+	spi_send(WRITE|reg);
+	spi_recieve();
+	
+	//send data to write in register
+	spi_send(WRITE|data);
+	spi_recieve();
+	
+	spi_enable(0);
+}
+
+unsigned char spi_read(unsigned char reg) {
+	//Read something
+	spi_enable(1);
+	
+	//send register to read
+	spi_send(READ|reg);
+	
+	//read the data
+	unsigned char data=spi_recieve();
+	spi_enable(0);
+	return data;
+}
+
+/**init_BMA180
+ * @arg range a 3-bit value between 0x00 and 0x06 will set the range as described in the BMA180 datasheet (pg. 27)
+ * @arg bw a 4-bit value between 0x00 and 0x09.  Again described on pg. 27
+ * @returns -1 on error, 0 on success
+ */
+unsigned char BMA180_init(unsigned char range, unsigned char bw) {
+	char temp, temp1;
+	
+	//Apparently the id is always supposed to be 3, i get 1.
+// 	if(spi_read(BMA180_ID)!=3)
+// 		return -1;
+	
+	// Have to set ee_w to write any other registers
+	temp = spi_read(BMA180_CTRLREG0);
+	set_bits(temp,0x10);
+	spi_write(BMA180_CTRLREG0, temp);
+	
+	//Set bw
+	bw<<=4;
+	temp = spi_read(BMA180_BWTCS);
+	change_bits(temp,BMA180_BWMASK,bw);
+	spi_write(BMA180_BWTCS, temp);
+	
+	//Set range
+	range<<=BMA180_RANGESHIFT;
+	temp = spi_read(BMA180_OLSB1);
+	change_bits(temp,BMA180_RANGEMASK,range);
+	spi_write(BMA180_OLSB1, temp);
+	
+	return 0;
+}
+
 void main(void)
 {
 	io_init();
-	onboard_acc_init();
 	
-	//Calibrate
-	#define CALIBRATION_COUNT 50
-	unsigned int calibration[3]={0,0,0};
-	for(unsigned int i=0;i<CALIBRATION_COUNT;i++) {
-		output_leds(i);
-		for(unsigned int channel=0;channel<3;channel++) {
-			__delay_cycles(2000);
-			calibration[channel]+=onboard_acc_read(channel);
-		}
-	}
-	for(unsigned int channel=0;channel<3;channel++) {
-		calibration[channel]/=CALIBRATION_COUNT;
-	}
+	set_bits(P1DIR,(1<<CS)|(1<<CLOCK)|(1<<DOUT));
+	clear_bit(P1DIR,DIN);
+	
+	//BMA180_init(0x01, 0x00);
 	
 	while(1) {
-		unsigned char leds=0;
-		for(unsigned int channel=0;channel<3;channel++) {
-			unsigned int rawvalue=onboard_acc_read(channel);
-			int value=rawvalue-calibration[channel];
-			change_bit(leds,channel,value>0);
-		}
-		output_leds(leds);
+		output_leds(spi_read(BMA180_ID));
+		__delay_cycles(2000);
 	}
 }
