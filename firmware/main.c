@@ -36,6 +36,7 @@ void io_init(void) {
 #define CLOCK 1
 #define DOUT 2
 #define DIN 7
+#define INTERRUPT 6
 
 ///Enables spi communication, 1 for start, 0 for stop
 unsigned char spi_enable(unsigned char enable) {
@@ -177,7 +178,7 @@ void main(void)
 	set_bits(P1DIR,(1<<CS)|(1<<CLOCK)|(1<<DOUT));
 	clear_bit(P1DIR,DIN);
 	
-	if(init_BMA180(0b010, 0b0100)==-1)
+	if(init_BMA180(0b000, 0b0100)==-1)
 		while(1) {
 			output_leds(0xFF);
 			__delay_cycles(20000);
@@ -185,8 +186,23 @@ void main(void)
 			__delay_cycles(20000);
 		}
 	
+	spi_write(0x27,0b00000001); //disable i2c
+	spi_write(0x33,0b00000000); //shadow register enabled
+	
 	while(1) {
-		output_leds(spi_read(BMA180_ACCXLSB));
-		__delay_cycles(2000);
+		
+		spi_enable(1);
+		
+		//send register to read
+		spi_send(READ|BMA180_ACCXLSB);
+		
+		//read the data
+		unsigned char lsb=spi_recieve();
+		unsigned char msb=spi_recieve();
+		
+		spi_enable(0);
+		
+		output_leds(msb);
+		__delay_cycles(20);
 	}
 }
