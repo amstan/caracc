@@ -34,7 +34,7 @@ clean:
 	rm -fr $(PROG).elf $(PROG).lst $(OBJS)
 
 install: $(PROG).elf
-	$(MSPDEBUG) $(FET) "prog $(PROG).elf"
+	$(MSPDEBUG) $(FET) "load $(PROG).elf"
 
 mspdebug: $(PROG).elf
 	$(MSPDEBUG) $(FET)
@@ -52,4 +52,4 @@ ddd: $(PROG).elf
 	ddd --debugger $(GDB) $(PROG).elf
 
 terminal:
-	miniterm.py /dev/ttyUSB0
+	miniterm2.py /dev/ttyUSB0

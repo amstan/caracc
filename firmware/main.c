@@ -72,10 +72,9 @@ int main(void) {
 	chip_init();
 	io_init();
 	output_leds(0x00);
+	usci0.init();
 	
 	while(1) {
-		//output_leds(leds);
-		toggle_bit(P3OUT,7);
-		__delay_ms(1000);
+		usci0.xmit("a");
 	}
 }
