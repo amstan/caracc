@@ -7,6 +7,7 @@
 
 #include "onboard_acc.h"
 #include "bma180.h"
+#include "gyro.h"
 
 #include <stdint.h>
 #include "ringbuffer.h"
@@ -88,45 +89,27 @@ int main(void) {
 	usci0.init();
 	onboard_acc_init();
 	
-	if(BMA180_init(0b000, 0b0100)==-1)
-		while(1) {
-			output_leds(0xFF);
-			__delay_cycles(20000);
-			output_leds(spi_read(BMA180_ID));
-			__delay_cycles(20000);
-		}
+	while(L3G4200D_init(1)==-1) {
+		usci0.xmit("Error starting gyro communications, whoami register:");
+		printint(spi_read(L3G4200D_WHO_AM_I));
+		usci0.xmit('\n');
+	}
 	
 	while(1) {
-		cs = CS_ACC;
-		spi_enable(1);
+		unsigned int x,y,z;
 		
-		//send register to read
-		spi_send(READ|BMA180_ACCXLSB);
+		getGyroValues(x,y,z);
 		
-		//read the data
-		unsigned char lsbx=spi_recieve();
-		unsigned char msbx=spi_recieve();
-		unsigned char lsby=spi_recieve();
-		unsigned char msby=spi_recieve();
-		unsigned char lsbz=spi_recieve();
-		unsigned char msbz=spi_recieve();
+		output_leds(x/256);
 		
-		unsigned int axisx=msbx*256+lsbx;
-		unsigned int axisy=msby*256+lsby;
-		unsigned int axisz=msbz*256+lsbz;
-		
-		spi_enable(0);
-		
-		output_leds(msbx);
-		
-		printint(axisx);
+		printint(x);
 		usci0.xmit("\t");
-		printint(axisy);
+		printint(y);
 		usci0.xmit("\t");
-		printint(axisz);
-		usci0.xmit("\t");
+		printint(z);
+		//usci0.xmit("\t");
 		
-		printint(onboard_acc_read(X));
+		//printint(onboard_acc_read(X));
 		usci0.xmit("\n");
 	}
 }

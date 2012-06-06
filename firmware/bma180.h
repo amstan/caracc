@@ -48,8 +48,9 @@
  * @returns -1 on error, 0 on success
  */
 unsigned char BMA180_init(unsigned char range, unsigned char bw) {
-	unsigned char reg;
 	cs=CS_ACC;
+	
+	unsigned char reg;
 	
 	//Apparently the id is always supposed to be 3
 	if(spi_read(BMA180_ID)!=3)
