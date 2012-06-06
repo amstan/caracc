@@ -19,7 +19,6 @@ void onboard_acc_init(void) {
 unsigned int onboard_acc_read(unsigned char channel) {
 	ADC10CTL0 &= ~ADC10ENC;                   //Stop conversion
 	change_bits(ADC10MCTL0, 0b00001111, 12+channel); // ADC input select;
-	//output_leds(ADC10MCTL0);
 	ADC10CTL0 |= ADC10ENC + ADC10SC;          // Sampling and conversion start
 	while (ADC10CTL1 & BUSY);
 	return ADC10MEM0;

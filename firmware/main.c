@@ -68,148 +68,11 @@ void chip_init(void) {
 	clock_1MHz();
 }
 
-
-
-#define WRITE 0b00000000
-#define READ  0b10000000
-
-#define CS 0
-#define CLOCK 1
-#define DOUT 2
-#define DIN 7
-#define INTERRUPT 6
-
-///Enables spi communication, 1 for start, 0 for stop
-unsigned char spi_enable(unsigned char enable) {
-	change_bit(P1OUT,CS,!enable);
-}
-
-void clockpulse(unsigned char rising) {
-	change_bit(P1OUT,CLOCK,!rising);
-	
-	//Switch here!
-	
-	change_bit(P1OUT,CLOCK,rising);
-}
-
-void spi_send(unsigned char data) {
-	for(signed char bit=7;bit>=0;bit--) {
-		change_bit(P1OUT,DOUT,test_bit(data,bit));
-		clockpulse(1);
+void printint(int i) {
+	if(i<0) {
+		i*=-1;
+		usci0.xmit('-');
 	}
-}
-
-unsigned char spi_recieve(void) {
-	unsigned char data;
-	for(signed char bit=7;bit>=0;bit--) {
-		clockpulse(1);
-		change_bit(data,bit,test_bit(P1IN,DIN));
-	}
-	return data;
-}
-
-void spi_write(unsigned char reg, unsigned char data) {
-	spi_enable(1);
-	
-	__delay_cycles(20000);
-	//send register to write
-	spi_send(WRITE|reg);
-	//spi_recieve();
-	
-	__delay_cycles(20000);
-	
-	//send data to write in register
-	spi_send(WRITE|data);
-	//spi_recieve();
-	__delay_cycles(20000);
-	
-	spi_enable(0);
-}
-
-unsigned char spi_read(unsigned char reg) {
-	//Read something
-	spi_enable(1);
-	
-	//send register to read
-	spi_send(READ|reg);
-	
-	//read the data
-	unsigned char data=spi_recieve();
-	spi_enable(0);
-	return data;
-}
-
-/**init_BMA180
- * @arg range a 3-bit value between 0x00 and 0x06 will set the range as described in the BMA180 datasheet (pg. 27)
- * @arg bw a 4-bit value between 0x00 and 0x09.  Again described on pg. 27
- * @returns -1 on error, 0 on success
- */
-unsigned char BMA180_init(unsigned char range, unsigned char bw) {
-	char temp, temp1;
-	
-	//Apparently the id is always supposed to be 3, i get 1.
-	if(spi_read(BMA180_ID)!=3)
-		return -1;
-	
-	// Have to set ee_w to write any other registers
-	temp = spi_read(BMA180_CTRLREG0);
-	set_bits(temp,0x10);
-	spi_write(BMA180_CTRLREG0, temp);
-	
-	//Set bw
-	bw<<=4;
-	temp = spi_read(BMA180_BWTCS);
-	change_bits(temp,BMA180_BWMASK,bw);
-	spi_write(BMA180_BWTCS, temp);
-	
-	//Set range
-	range<<=BMA180_RANGESHIFT;
-	temp = spi_read(BMA180_OLSB1);
-	change_bits(temp,BMA180_RANGEMASK,range);
-	spi_write(BMA180_OLSB1, temp);
-	
-	return 0;
-}
-
-// init_BMA180
-// Input: range is a 3-bit value between 0x00 and 0x06 will set the range as described in the BMA180 datasheet (pg. 27)
-// bw is a 4-bit value between 0x00 and 0x09.  Again described on pg. 27
-// Output: -1 on error, 0 on success
-int init_BMA180(unsigned char range, unsigned char bw)
-{
-	char temp, temp1;
-	
-	// if connected correctly, ID register should be 3
-	if(spi_read(BMA180_ID) != 3)
-		return -1;
-		
-	//-------------------------------------------------------------------------------------
-	// Set ee_w bit
-	temp = spi_read(BMA180_CTRLREG0);
-	temp |= 0x10;
-	spi_write(BMA180_CTRLREG0, temp);	// Have to set ee_w to write any other registers
-	//-------------------------------------------------------------------------------------
-	// Set BW
-	temp = spi_read(BMA180_BWTCS);
-	temp1 = bw;
-	temp1 = temp1<<4;
-	temp &= (~BMA180_BWMASK);
-	temp |= temp1;
-	spi_write(BMA180_BWTCS, temp);		// Keep tcs<3:0> in BWTCS, but write new BW
-	//-------------------------------------------------------------------------------------
-	// Set Range
-	temp = spi_read(BMA180_OLSB1);
-	temp1 = range;
-	temp1 = (temp1<<BMA180_RANGESHIFT);
-	temp &= (~BMA180_RANGEMASK);
-	temp |= temp1;
-	spi_write(BMA180_OLSB1, temp); //Write new range data, keep other bits the same
-	//-------------------------------------------------------------------------------------
-	
-	return 0;
-}
-
-void printint(unsigned int i) {
 	for(unsigned int digit=10000;digit!=0;digit/=10) {
 		usci0.xmit('0'+((i/digit)%10));
 	}
@@ -219,6 +82,7 @@ int main(void) {
 	chip_init();
 	io_init();
 	usci0.init();
+	onboard_acc_init();
 	
 	set_bits(P1DIR,(1<<CS)|(1<<CLOCK)|(1<<DOUT));
 	clear_bit(P1DIR,DIN);
@@ -231,9 +95,6 @@ int main(void) {
 			__delay_cycles(20000);
 		}
 	
-	spi_write(0x27,0b00000001); //disable i2c
-	spi_write(0x33,0b00000000); //shadow register enabled
-	
 	while(1) {
 		
 		spi_enable(1);
@@ -242,16 +103,29 @@ int main(void) {
 		spi_send(READ|BMA180_ACCXLSB);
 		
 		//read the data
-		unsigned char lsb=spi_recieve();
-		unsigned char msb=spi_recieve();
+		unsigned char lsbx=spi_recieve();
+		unsigned char msbx=spi_recieve();
+		unsigned char lsby=spi_recieve();
+		unsigned char msby=spi_recieve();
+		unsigned char lsbz=spi_recieve();
+		unsigned char msbz=spi_recieve();
 		
-		unsigned int axis=msb*256+lsb;
+		unsigned int axisx=msbx*256+lsbx;
+		unsigned int axisy=msby*256+lsby;
+		unsigned int axisz=msbz*256+lsbz;
 		
 		spi_enable(0);
 		
-		output_leds(msb);
-		printint(axis);
+		output_leds(msbx);
+		
+		printint(axisx);
+		usci0.xmit("\t");
+		printint(axisy);
+		usci0.xmit("\t");
+		printint(axisz);
+		usci0.xmit("\t");
+		
+		printint(onboard_acc_read(X));
 		usci0.xmit("\n");
-		//__delay_ms(100);
 	}
 }
