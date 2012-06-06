@@ -41,6 +41,10 @@ void io_init(void) {
 	set_bits(P4REN,(1<<S1)|(1<<S2)); //enable resistors
 	set_bits(P4OUT,(1<<S1)|(1<<S2)); //pullup
 	#define switch_pressed(switch) (!test_bit(P4IN,switch))
+	
+	//spi pins
+	set_bits(P1DIR,(1<<CS_ACC)|(1<<CS_GYRO)|(1<<CLOCK)|(1<<DOUT));
+	clear_bit(P1DIR,DIN);
 }
 
 void clock_1MHz(void) {
@@ -84,10 +88,7 @@ int main(void) {
 	usci0.init();
 	onboard_acc_init();
 	
-	set_bits(P1DIR,(1<<CS)|(1<<CLOCK)|(1<<DOUT));
-	clear_bit(P1DIR,DIN);
-	
-	if(init_BMA180(0b000, 0b0100)==-1)
+	if(BMA180_init(0b000, 0b0100)==-1)
 		while(1) {
 			output_leds(0xFF);
 			__delay_cycles(20000);
@@ -96,7 +97,7 @@ int main(void) {
 		}
 	
 	while(1) {
-		
+		cs = CS_ACC;
 		spi_enable(1);
 		
 		//send register to read

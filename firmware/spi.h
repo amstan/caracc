@@ -4,15 +4,25 @@
 #define WRITE 0b00000000
 #define READ  0b10000000
 
-#define CS 0
-#define CLOCK 1
-#define DOUT 2
+#define CS_ACC 0
+#define CS_GYRO 1
+#define CLOCK 2
+#define DOUT 3
 #define DIN 7
 #define INTERRUPT 6
 
+///Represents current chip to talk to
+unsigned char cs = CS_ACC;
+
 ///Enables spi communication, 1 for start, 0 for stop
-unsigned char spi_enable(unsigned char enable) {
-	change_bit(P1OUT,CS,!enable);
+void spi_enable(unsigned char enable) {
+	if(enable) {
+		clear_bit(P1OUT,cs);
+	} else {
+		set_bit(P1OUT,CS_ACC);
+		set_bit(P1OUT,CS_GYRO);
+	}
+	change_bit(P1OUT,cs,!enable);
 }
 
 void clockpulse(unsigned char rising) {
@@ -45,13 +55,11 @@ void spi_write(unsigned char reg, unsigned char data) {
 	__delay_cycles(20000);
 	//send register to write
 	spi_send(WRITE|reg);
-	//spi_recieve();
 	
 	__delay_cycles(20000);
 	
 	//send data to write in register
 	spi_send(WRITE|data);
-	//spi_recieve();
 	__delay_cycles(20000);
 	
 	spi_enable(0);

@@ -48,66 +48,29 @@
  * @returns -1 on error, 0 on success
  */
 unsigned char BMA180_init(unsigned char range, unsigned char bw) {
-	char temp, temp1;
+	unsigned char reg;
+	cs=CS_ACC;
 	
-	//Apparently the id is always supposed to be 3, i get 1.
+	//Apparently the id is always supposed to be 3
 	if(spi_read(BMA180_ID)!=3)
 		return -1;
 	
 	// Have to set ee_w to write any other registers
-	temp = spi_read(BMA180_CTRLREG0);
-	set_bits(temp,0x10);
-	spi_write(BMA180_CTRLREG0, temp);
+	reg = spi_read(BMA180_CTRLREG0);
+	set_bits(reg,0x10);
+	spi_write(BMA180_CTRLREG0, reg);
 	
 	//Set bw
 	bw<<=4;
-	temp = spi_read(BMA180_BWTCS);
-	change_bits(temp,BMA180_BWMASK,bw);
-	spi_write(BMA180_BWTCS, temp);
+	reg = spi_read(BMA180_BWTCS);
+	change_bits(reg,BMA180_BWMASK,bw);
+	spi_write(BMA180_BWTCS, reg);
 	
 	//Set range
 	range<<=BMA180_RANGESHIFT;
-	temp = spi_read(BMA180_OLSB1);
-	change_bits(temp,BMA180_RANGEMASK,range);
-	spi_write(BMA180_OLSB1, temp);
-	
-	return 0;
-}
-
-// init_BMA180
-// Input: range is a 3-bit value between 0x00 and 0x06 will set the range as described in the BMA180 datasheet (pg. 27)
-// bw is a 4-bit value between 0x00 and 0x09.  Again described on pg. 27
-// Output: -1 on error, 0 on success
-int init_BMA180(unsigned char range, unsigned char bw)
-{
-	char temp, temp1;
-	
-	// if connected correctly, ID register should be 3
-	if(spi_read(BMA180_ID) != 3)
-		return -1;
-		
-	//-------------------------------------------------------------------------------------
-	// Set ee_w bit
-	temp = spi_read(BMA180_CTRLREG0);
-	temp |= 0x10;
-	spi_write(BMA180_CTRLREG0, temp);	// Have to set ee_w to write any other registers
-	//-------------------------------------------------------------------------------------
-	// Set BW
-	temp = spi_read(BMA180_BWTCS);
-	temp1 = bw;
-	temp1 = temp1<<4;
-	temp &= (~BMA180_BWMASK);
-	temp |= temp1;
-	spi_write(BMA180_BWTCS, temp);		// Keep tcs<3:0> in BWTCS, but write new BW
-	//-------------------------------------------------------------------------------------
-	// Set Range
-	temp = spi_read(BMA180_OLSB1);
-	temp1 = range;
-	temp1 = (temp1<<BMA180_RANGESHIFT);
-	temp &= (~BMA180_RANGEMASK);
-	temp |= temp1;
-	spi_write(BMA180_OLSB1, temp); //Write new range data, keep other bits the same
-	//-------------------------------------------------------------------------------------
+	reg = spi_read(BMA180_OLSB1);
+	change_bits(reg,BMA180_RANGEMASK,range);
+	spi_write(BMA180_OLSB1, reg);
 	
 	//disable i2c
 	spi_write(0x27,0b00000001);
