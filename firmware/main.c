@@ -48,14 +48,14 @@ void io_init(void) {
 	clear_bit(P1DIR,DIN);
 }
 
-void clock_1MHz(void) {
+void clock_8MHz(void) {
 	// XT1 Setup 
 	PJSEL0 |= BIT4 + BIT5; 
 	
 	CSCTL0_H = 0xA5;
 	CSCTL1 |= DCOFSEL0 + DCOFSEL1;     // Set max. DCO setting
 	CSCTL2 = SELA_0 + SELS_3 + SELM_3; // set ACLK = XT1; MCLK = DCO
-	CSCTL3 = DIVA_0 + DIVS_3 + DIVM_3; // set all dividers 
+	CSCTL3 = DIVA_0 + DIVS_0 + DIVM_0; // set all dividers 
 	CSCTL4 |= XT1DRIVE_0; 
 	CSCTL4 &= ~XT1OFF;
 	
@@ -70,7 +70,7 @@ void chip_init(void) {
 	// Stop WDT
 	WDTCTL = WDTPW+WDTHOLD;
 	
-	clock_1MHz();
+	clock_8MHz();
 }
 
 void printint(int i) {
@@ -87,7 +87,10 @@ int main(void) {
 	chip_init();
 	io_init();
 	usci0.init();
+	output_leds(255);
+	
 	onboard_acc_init();
+	
 	
 	while(L3G4200D_init(1)==-1) {
 		usci0.xmit("Error starting gyro communications, whoami register:");

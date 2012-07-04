@@ -52,4 +52,4 @@ ddd: $(PROG).elf
 	ddd --debugger $(GDB) $(PROG).elf
 
 terminal:
-	miniterm2.py /dev/ttyUSB0
+	miniterm2.py /dev/ttyUSB0 --baud 115200

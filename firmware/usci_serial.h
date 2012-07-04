@@ -30,11 +30,10 @@ struct Serial {
 		P2SEL0 &= ~(BIT0 + BIT1);
 		// Configure UART 0
 		UCA0CTL1 |= UCSWRST; 
-		UCA0CTL1 = UCSSEL_1;                      // Set ACLK = 32768 as UCBRCLK
-		UCA0BR0 = 3;                              // 9600 baud
+		UCA0CTL1 = UCSSEL_2;
+		UCA0BR0 = 4;                              // 9600 baud
 		UCA0BR1 = 0; 
-		UCA0MCTLW |= 0x5300;                      // 32768/9600 - INT(32768/9600)=0.41
-												// UCBRSx value = 0x53 (See UG)
+		UCA0MCTLW |= 0x5551;                      // UCBRSx value = 0x53 (See UG)
 		UCA0CTL1 &= ~UCSWRST;                     // release from reset
 		UCA0IE |= UCRXIE;                         // Enable RX interrupt
 	}
