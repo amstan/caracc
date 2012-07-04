@@ -4,12 +4,11 @@
 #define WRITE 0b00000000
 #define READ  0b10000000
 
-#define CS_ACC 0
-#define CS_GYRO 1
-#define CLOCK 2
+#define CS_ACC 5
+#define CS_GYRO 7
+#define CLOCK 4
 #define DOUT 3
-#define DIN 7
-#define INTERRUPT 6
+#define DIN 0
 
 ///Represents current chip to talk to
 unsigned char cs = CS_ACC;
