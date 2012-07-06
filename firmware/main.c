@@ -91,17 +91,19 @@ int main(void) {
 	
 	onboard_acc_init();
 	
+	usci0.xmit("Booting!\n");
 	
-	while(L3G4200D_init(1)==-1) {
-		usci0.xmit("Error starting gyro communications, whoami register:");
-		printint(spi_read(L3G4200D_WHO_AM_I));
+	
+	while(BMA180_init(0b0010,0b0010)==-1) {
+		usci0.xmit("Error starting acc communications, whoami register:");
+		printint(spi_read(BMA180_ID));
 		usci0.xmit('\n');
 	}
 	
 	while(1) {
 		unsigned int x,y,z;
 		
-		getGyroValues(x,y,z);
+		getAccValues(x,y,z);
 		
 		output_leds(x/256);
 		

@@ -47,7 +47,7 @@
  * @arg bw a 4-bit value between 0x00 and 0x09.  Again described on pg. 27
  * @returns -1 on error, 0 on success
  */
-unsigned char BMA180_init(unsigned char range, unsigned char bw) {
+int BMA180_init(unsigned char range, unsigned char bw) {
 	cs=CS_ACC;
 	
 	unsigned char reg;
@@ -80,6 +80,20 @@ unsigned char BMA180_init(unsigned char range, unsigned char bw) {
 	spi_write(0x33,0b00000000);
 	
 	return 0;
+}
+
+void getAccValues(unsigned int &x, unsigned int &y, unsigned int &z) {
+	cs=CS_ACC;
+	//spi_send(READ|BMA180_ACCXLSB);
+	
+	x |= (spi_read(BMA180_ACCXLSB)&0xFF);
+	x = (spi_read(BMA180_ACCXMSB)&0xFF)<<8;
+	
+	y |= (spi_read(BMA180_ACCYLSB)&0xFF);
+	y = (spi_read(BMA180_ACCYMSB)&0xFF)<<8;
+	
+	z |= (spi_read(BMA180_ACCZLSB)&0xFF);
+	z = (spi_read(BMA180_ACCZMSB)&0xFF)<<8;
 }
 
 #endif
