@@ -21,7 +21,7 @@ if __name__=="__main__":
 			if unsyncdcount>10:
 				unsyncdcount=8
 				s.read(1)
-				print "skipping byte to sync"
+				sys.stderr.write(".")
 			
 			number=readnumber(s)
 		
@@ -29,5 +29,5 @@ if __name__=="__main__":
 			for d in range(3):
 				number=readnumber(s)
 				print ("%+d" % number),
-			#print "  ",
+			
 		print

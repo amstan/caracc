@@ -1,8 +1,8 @@
 #!/bin/bash
 
-echo "0 0 0">data
+#echo "0 0 0 ">data
 kst2 graph.kst&
-miniterm2.py /dev/ttyUSB0 --baud 115200|tee data
+./parse.py /dev/ttyUSB0>data
 
 echo "Don't forget to remove the data file."
 ls -lah data
