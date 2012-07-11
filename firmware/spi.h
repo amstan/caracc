@@ -9,6 +9,13 @@
 #define CLOCK 4
 #define DOUT 3
 #define DIN 0
+#define DIN0 0
+#define DIN1 1
+#define DIN2 2
+
+#define X 0
+#define Y 1
+#define Z 2
 
 ///Represents current chip to talk to
 unsigned char cs = CS_ACC;

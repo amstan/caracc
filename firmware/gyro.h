@@ -71,17 +71,17 @@ int L3G4200D_init(unsigned char fullScale) {
   return 0;
 }
 
-void getGyroValues(unsigned int &x, unsigned int &y, unsigned int &z) {
+void getGyroValues(signed int gyro[3]) {
   cs=CS_GYRO;
   
-  x = (spi_read(0x29)&0xFF)<<8;
-  x |= (spi_read(0x28)&0xFF);
+  gyro[X] = (spi_read(0x29)&0xFF)<<8;
+  gyro[X] |= (spi_read(0x28)&0xFF);
   
-  y = (spi_read(0x2B)&0xFF)<<8;
-  y |= (spi_read(0x2A)&0xFF);
+  gyro[Y] = (spi_read(0x2B)&0xFF)<<8;
+  gyro[Y] |= (spi_read(0x2A)&0xFF);
   
-  z = (spi_read(0x2D)&0xFF)<<8;
-  z |= (spi_read(0x2C)&0xFF);
+  gyro[Z] = (spi_read(0x2D)&0xFF)<<8;
+  gyro[Z] |= (spi_read(0x2C)&0xFF);
 }
 
 #endif

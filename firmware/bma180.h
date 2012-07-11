@@ -82,18 +82,58 @@ int BMA180_init(unsigned char range, unsigned char bw) {
 	return 0;
 }
 
-void getAccValues(unsigned int &x, unsigned int &y, unsigned int &z) {
+void getAccValues(signed int acc[3]) {
 	cs=CS_ACC;
-	//spi_send(READ|BMA180_ACCXLSB);
 	
-	x |= (spi_read(BMA180_ACCXLSB)&0xFF);
-	x = (spi_read(BMA180_ACCXMSB)&0xFF)<<8;
+	spi_enable(1);
 	
-	y |= (spi_read(BMA180_ACCYLSB)&0xFF);
-	y = (spi_read(BMA180_ACCYMSB)&0xFF)<<8;
+	spi_send(READ|BMA180_ACCXLSB);
 	
-	z |= (spi_read(BMA180_ACCZLSB)&0xFF);
-	z = (spi_read(BMA180_ACCZMSB)&0xFF)<<8;
+	for(unsigned char d=0;d<3;d++){
+		acc[d] = spi_recieve();
+		acc[d] |= spi_recieve()<<8;
+	}
+	
+	spi_enable(0);
+}
+
+///Number of accelerometer devices
+#define ACCNUMBER 4
+
+void spi_recieve_multi(unsigned int data[3]) {
+	for(unsigned int i=0;i<ACCNUMBER;i++) {
+		data[i]=0;
+	}
+	for(signed char bit=7;bit>=0;bit--) {
+		clockpulse(1);
+		
+		change_bit(data[0],bit,test_bit(P1IN,DIN0));
+		change_bit(data[1],bit,test_bit(P1IN,DIN1));
+		change_bit(data[2],bit,test_bit(P1IN,DIN2));
+		//change_bit(data[3],bit,test_bit(P1IN,DIN));
+	}
+}
+
+void getAccsValues(signed int acc[ACCNUMBER][3]) {
+	unsigned int data[ACCNUMBER];
+	
+	cs=CS_ACC;
+	spi_enable(1);
+	spi_send(READ|BMA180_ACCXLSB);
+	
+	for(unsigned char d=0;d<3;d++){
+		spi_recieve_multi(data);
+		for(unsigned int i=0;i<ACCNUMBER;i++) {
+			acc[i][d] = data[i];
+		}
+		
+		spi_recieve_multi(data);
+		for(unsigned int i=0;i<ACCNUMBER;i++) {
+			acc[i][d] |= data[i]<<8;
+		}
+	}
+	
+	spi_enable(0);
 }
 
 #endif
