@@ -1,6 +1,6 @@
 #!/bin/bash
 
-#echo "0 0 0 ">data
+echo "0 0 0 0 0 0 0 0 0 0 0 0 0 0 0 0 0 0">data
 kst2 graph.kst&
 ./parse.py /dev/ttyUSB0>data
 
