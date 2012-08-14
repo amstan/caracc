@@ -9,8 +9,8 @@
 #include "ringbuffer.h"
 #include "usci_serial.h"
 
-ringbuffer_ui8_16 usci_buffer = { 0, 0, { 0 } };
-Serial<ringbuffer_ui8_16> usci0 = { usci_buffer };
+ringbuffer_ui8_128 usci_buffer = { 0, 0, { 0 } };
+Serial<ringbuffer_ui8_128> usci0 = { usci_buffer };
 void __attribute__((interrupt (USCI_A0_VECTOR))) USCI0RX_ISR() {
 	usci_buffer.push_back(UCA0RXBUF);
 }
@@ -47,20 +47,19 @@ void io_init(void) {
 	clear_bit(P1DIR,DIN0);
 	clear_bit(P1DIR,DIN1);
 	clear_bit(P1DIR,DIN2);
-	//clear_bit(P1DIR,DIN3);//TODO
+	clear_bit(P3DIR,DIN3);//TODO
 	///enable resistors
 	set_bit(P1REN,DIN);
 	set_bit(P1REN,DIN0);
 	set_bit(P1REN,DIN1);
 	set_bit(P1REN,DIN2);
-	//set_bit(P1REN,DIN3);//TODO
+	set_bit(P3REN,DIN3);//TODO
 	///pull down
 	clear_bit(P1OUT,DIN);
 	clear_bit(P1OUT,DIN0);
 	clear_bit(P1OUT,DIN1);
 	clear_bit(P1OUT,DIN2);
-	//clear_bit(P1OUT,DIN3);//TODO
-	
+	clear_bit(P3OUT,DIN3);//TODO
 }
 
 void clock_8MHz(void) {
@@ -120,36 +119,35 @@ int main(void) {
 	usci0.xmit("Booting!\n");
 	
 	
-	while(BMA180_init(0b0010,0b0010)==-1) {
+	while(BMA180_init(0b100,0b0111)==-1) {
 		usci0.xmit("Error starting acc communications.\n");
 	}
-	while(L3G4200D_init(0)==-1) {
+	while(L3G4200D_init(1)==-1) {
 		usci0.xmit("Error starting gyro communications.\n");
 	}
 	
 	while(1) {
 		signed int gyro[3];
 		signed int acc[ACCNUMBER][3];
+		signed int onboard[3];
 		
 		usci0.xmit((uint8_t)0x80);
 		usci0.xmit((uint8_t)0x00);
 		
 		getGyroValues(gyro);
-		sendint(gyro[X]);
-		sendint(gyro[Y]);
-		sendint(gyro[Z]);
-		
 		getAccsValues(acc);
-		for(unsigned int i=0;i<ACCNUMBER;i++) {
-			sendint(acc[i][X]);
-			sendint(acc[i][Y]);
-			sendint(acc[i][Z]);
+		for(unsigned int d=0;d<3;d++) {
+			onboard[d]=onboard_acc_read(d);
 		}
 		
-		sendint(onboard_acc_read(X));
-		sendint(onboard_acc_read(Y));
-		sendint(onboard_acc_read(Z));
-		//for(x=1;x<10;x++)
-		//	sendint(x);
+		//send data
+		for(unsigned int d=0;d<3;d++)
+			sendint(gyro[d]);
+		for(unsigned int i=0;i<ACCNUMBER;i++) {
+			for(unsigned int d=0;d<3;d++)
+				sendint(acc[i][d]);
+		}
+		for(unsigned int d=0;d<3;d++)
+			sendint(onboard[d]);
 	}
 }

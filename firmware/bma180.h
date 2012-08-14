@@ -110,7 +110,7 @@ void spi_recieve_multi(unsigned int data[3]) {
 		change_bit(data[0],bit,test_bit(P1IN,DIN0));
 		change_bit(data[1],bit,test_bit(P1IN,DIN1));
 		change_bit(data[2],bit,test_bit(P1IN,DIN2));
-		//change_bit(data[3],bit,test_bit(P1IN,DIN));
+		change_bit(data[3],bit,test_bit(P3IN,DIN3));
 	}
 }
 

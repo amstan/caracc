@@ -78,7 +78,7 @@ struct ringbuffer {
     }
 };
 
-typedef ringbuffer<uint8_t, 16> ringbuffer_ui8_16; // ringbuffer, max of 16 uint8_t values
+typedef ringbuffer<uint8_t, 128> ringbuffer_ui8_128; // ringbuffer, max of 128 uint8_t values
 typedef ringbuffer<uint8_t, 32> Ringbuffer_uint8_32; // ringbuffer, max of 32 uint8_t values
 
 #endif /* RINGBUFFER_H_ */

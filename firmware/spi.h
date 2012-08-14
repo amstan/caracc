@@ -12,6 +12,7 @@
 #define DIN0 0
 #define DIN1 1
 #define DIN2 2
+#define DIN3 3
 
 #define X 0
 #define Y 1
@@ -47,7 +48,7 @@ void spi_send(unsigned char data) {
 }
 
 unsigned char spi_recieve(void) {
-	unsigned char data;
+	unsigned char data=0;
 	for(signed char bit=7;bit>=0;bit--) {
 		clockpulse(1);
 		change_bit(data,bit,test_bit(P1IN,DIN));
