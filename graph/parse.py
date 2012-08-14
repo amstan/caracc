@@ -3,6 +3,7 @@
 import serial
 import struct
 import sys
+import time
 
 def readnumber(s):
 	bytes=s.read(2)
@@ -13,6 +14,8 @@ number=0
 if __name__=="__main__":
 	s=serial.Serial(port=sys.argv[1],baudrate=115200)
 	
+	sumdelta=0
+	countdelta=0
 	while 1:
 		#sync
 		unsyncdcount=0
@@ -25,9 +28,25 @@ if __name__=="__main__":
 			
 			number=readnumber(s)
 		
+		if 0:
+			#time stuff
+			now=time.time()
+			try:
+				delta=now-oldtime
+			except NameError:
+				delta=0.00461963847884
+			
+			sumdelta+=delta
+			countdelta+=1
+			
+			print time.time(), delta, sumdelta, countdelta, sumdelta/countdelta,
+			oldtime=now
+		
 		for i in range(2+4):
 			for d in range(3):
 				number=readnumber(s)
 				print ("%+d" % number),
 			
 		print
+		
+		sys.stdout.flush()
